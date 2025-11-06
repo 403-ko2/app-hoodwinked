@@ -1,5 +1,10 @@
 {
   "expo": {
+      "extra":{
+        "router": {
+            "root": "frontend/app"
+        }
+    },
     "name": "hoodWinked!",
     "slug": "hoodWinked",
     "version": "1.0.0",

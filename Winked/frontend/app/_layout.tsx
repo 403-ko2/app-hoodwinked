@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { useColorScheme } from 'react-native'; // simpler than custom hook for now
+import { PersonaProvider } from '../context/PersonaContext.tsx';
 
 export const unstable_settings = {
     initialRouteName: '(tabs)'
@@ -12,9 +13,11 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
+        <PersonaProvider>
+            <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+        </PersonaProvider>
     </ThemeProvider>
   );
 }

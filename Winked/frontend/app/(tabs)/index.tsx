@@ -1,15 +1,17 @@
 import { View, Text } from "react-native";
 import PersonaList from "../../components/PersonaList";
 import { personas } from "../../data/personas";
-import { useNavigation } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import { usePersona } from "../../context/PersonaContext";
 
 export default function index() {
 
-    const navigation = useNavigation();
+    const router = useRouter(); 
+    const { setSelectedPersona } = usePersona();
 
     const handleSelect = (persona) => {
-    
-        navigation.navigate("rerwite", {persona});
+        setSelectedPersona(persona); // Set in context
+        router.push("/rewrite")
     };
 
   return (
