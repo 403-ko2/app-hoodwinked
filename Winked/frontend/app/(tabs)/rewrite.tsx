@@ -12,6 +12,7 @@ export default function RewriteScreen() {
   const handlePersonaPress = () => {
     // Takes the user back to the persona tab to pick one
     router.replace("/"); 
+    fetch('http://localhost:3000/');
   };
 
   return (
