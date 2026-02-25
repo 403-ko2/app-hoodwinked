@@ -10,9 +10,8 @@ export default function RewriteScreen() {
   const [text, setText] = useState("");
 
   const handlePersonaPress = () => {
-    // Takes the user back to the persona tab to pick one
-    router.replace("/"); 
-    fetch('http://localhost:3000/');
+    // Takes user back to personas tab to pick one
+    router.replace("/");
   };
 
   return (
@@ -61,9 +60,9 @@ export default function RewriteScreen() {
           placeholder={
             selectedPersona
               ? "Write your message..."
-              : "Select a persona to start writing"
+              : "Write your message (then pick a persona to rewrite)"
           }
-          editable={!!selectedPersona}
+          editable
           multiline
           numberOfLines={6}
           style={{
@@ -72,7 +71,7 @@ export default function RewriteScreen() {
             borderRadius: 15,
             padding: 15,
             fontSize: 16,
-            backgroundColor: selectedPersona ? "#fff" : "#f0f0f0",
+            backgroundColor: "#fff",
             textAlignVertical: "top",
           }}
         />

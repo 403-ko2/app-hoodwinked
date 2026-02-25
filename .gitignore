@@ -34,6 +34,9 @@ yarn-error.*
 .env*.local
 Winked/backend/.env
 .env
+**/.env
+**/.env.*
+!**/.env.example
 # typescript
 *.tsbuildinfo
 
