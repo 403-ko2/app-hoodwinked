@@ -8,10 +8,20 @@ export default function RewriteScreen() {
   const router = useRouter();
   const { selectedPersona } = usePersona();
   const [text, setText] = useState("");
+  const [lastSubmittedText, setLastSubmittedText] = useState("");
 
   const handlePersonaPress = () => {
     // Takes user back to personas tab to pick one
     router.replace("/");
+  };
+
+  const handleSubmit = () => {
+    const normalized = text.trim();
+    if (!normalized) return;
+
+    // Temporary local submit behavior until full API wiring.
+    setLastSubmittedText(normalized);
+    setText("");
   };
 
   return (
@@ -65,6 +75,9 @@ export default function RewriteScreen() {
           editable
           multiline
           numberOfLines={6}
+          returnKeyType="send"
+          submitBehavior="submit"
+          onSubmitEditing={handleSubmit}
           style={{
             borderWidth: 1,
             borderColor: "#ccc",
@@ -76,6 +89,37 @@ export default function RewriteScreen() {
           }}
         />
       </View>
+
+      <TouchableOpacity
+        onPress={handleSubmit}
+        style={{
+          marginTop: 16,
+          backgroundColor: "#6a1b9a",
+          borderRadius: 12,
+          paddingVertical: 14,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
+          Send
+        </Text>
+      </TouchableOpacity>
+
+      {lastSubmittedText ? (
+        <View
+          style={{
+            marginTop: 20,
+            padding: 12,
+            borderRadius: 12,
+            backgroundColor: "#f6f2fb",
+          }}
+        >
+          <Text style={{ fontWeight: "600", marginBottom: 6 }}>
+            Last submitted
+          </Text>
+          <Text>{lastSubmittedText}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
