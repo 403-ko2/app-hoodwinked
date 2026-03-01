@@ -1,14 +1,15 @@
 import React, { createContext, useContext, useState } from "react";
 
-type Persona = {
+export type Persona = {
   id: string;
   name: string;
   image: any;
-} | null;
+  description?: string;
+};
 
 type PersonaContextType = {
-  selectedPersona: Persona;
-  setSelectedPersona: (persona: Persona) => void;
+  selectedPersona: Persona | null;
+  setSelectedPersona: (persona: Persona | null) => void;
 };
 
 const PersonaContext = createContext<PersonaContextType>({
@@ -17,7 +18,7 @@ const PersonaContext = createContext<PersonaContextType>({
 });
 
 export const PersonaProvider = ({ children }: { children: React.ReactNode }) => {
-  const [selectedPersona, setSelectedPersona] = useState<Persona>(null);
+  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
   return (
     <PersonaContext.Provider value={{ selectedPersona, setSelectedPersona }}>
       {children}

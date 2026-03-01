@@ -3,25 +3,44 @@ import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { usePersona } from "../../context/PersonaContext";
+import { rewriteText } from "../../services/api";
 
 export default function RewriteScreen() {
   const router = useRouter();
   const { selectedPersona } = usePersona();
   const [text, setText] = useState("");
-  const [lastSubmittedText, setLastSubmittedText] = useState("");
+  const [rewrittenText, setRewrittenText] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePersonaPress = () => {
     // Takes user back to personas tab to pick one
     router.replace("/");
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const normalized = text.trim();
     if (!normalized) return;
+    if (!selectedPersona) {
+      setError("Select a persona first.");
+      return;
+    }
 
-    // Temporary local submit behavior until full API wiring.
-    setLastSubmittedText(normalized);
-    setText("");
+    try {
+      setIsSubmitting(true);
+      setError("");
+      const response = await rewriteText({
+        text: normalized,
+        personaID: selectedPersona.id,
+      });
+
+      setRewrittenText(response.transformedText);
+      setText("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rewrite text");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -92,20 +111,27 @@ export default function RewriteScreen() {
 
       <TouchableOpacity
         onPress={handleSubmit}
+        disabled={isSubmitting}
         style={{
           marginTop: 16,
-          backgroundColor: "#6a1b9a",
+          backgroundColor: isSubmitting ? "#b695cb" : "#6a1b9a",
           borderRadius: 12,
           paddingVertical: 14,
           alignItems: "center",
         }}
       >
         <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-          Send
+          {isSubmitting ? "Rewriting..." : "Rewrite"}
         </Text>
       </TouchableOpacity>
 
-      {lastSubmittedText ? (
+      {error ? (
+        <Text style={{ marginTop: 12, color: "#b00020", textAlign: "center" }}>
+          {error}
+        </Text>
+      ) : null}
+
+      {rewrittenText ? (
         <View
           style={{
             marginTop: 20,
@@ -114,10 +140,8 @@ export default function RewriteScreen() {
             backgroundColor: "#f6f2fb",
           }}
         >
-          <Text style={{ fontWeight: "600", marginBottom: 6 }}>
-            Last submitted
-          </Text>
-          <Text>{lastSubmittedText}</Text>
+          <Text style={{ fontWeight: "600", marginBottom: 6 }}>Rewritten text</Text>
+          <Text>{rewrittenText}</Text>
         </View>
       ) : null}
     </View>

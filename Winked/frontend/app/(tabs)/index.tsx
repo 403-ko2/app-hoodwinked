@@ -1,18 +1,46 @@
-import { View, Text } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, ActivityIndicator } from "react-native";
 import PersonaList from "../../components/PersonaList";
 import { personas } from "../../data/personas";
 import { useRouter } from "expo-router";
-import { usePersona } from "../../context/PersonaContext";
+import { type Persona, usePersona } from "../../context/PersonaContext";
+import { getPersonas } from "../../services/api";
 
-export default function index() {
+export default function Index() {
+  const router = useRouter();
+  const { setSelectedPersona } = usePersona();
+  const [personaList, setPersonaList] = useState<Persona[]>(personas as Persona[]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    const router = useRouter(); 
-    const { setSelectedPersona } = usePersona();
+  useEffect(() => {
+    let isMounted = true;
 
-    const handleSelect = (persona) => {
-        setSelectedPersona(persona); // Set in context
-        router.push("/rewrite")
+    const loadPersonas = async () => {
+      try {
+        const apiPersonas = await getPersonas();
+        if (!isMounted) return;
+        if (apiPersonas.length > 0) {
+          setPersonaList(apiPersonas);
+        }
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err.message : "Failed to load personas");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
+
+    loadPersonas();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSelect = (persona: Persona) => {
+    setSelectedPersona(persona); // Set in context
+    router.push("/rewrite");
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -26,7 +54,16 @@ export default function index() {
       >
         Choose a Persona
       </Text>
-      <PersonaList personas={personas} onSelect={handleSelect} />
+      {loading ? (
+        <ActivityIndicator size="large" color="#6a1b9a" />
+      ) : (
+        <PersonaList personas={personaList} onSelect={handleSelect} />
+      )}
+      {error ? (
+        <Text style={{ textAlign: "center", marginTop: 12, color: "#b00020" }}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }

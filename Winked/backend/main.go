@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"fmt"
 
 	"backend/database"
 	"backend/database/migrations"
@@ -72,6 +73,7 @@ func main() {
 		var req RewriteRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "text and personaID are required"})
+			fmt.Println()
 			return
 		}
 
@@ -99,7 +101,7 @@ func main() {
 		if err != nil {
 			if errors.Is(err, services.ErrMissingAPIKey) {
 				c.JSON(http.StatusServiceUnavailable, gin.H{
-					"error": "OPENAI_API_KEY is not set. Add it to backend environment variables.",
+					"error": "GEMINI_API_KEY is not set. Add it to backend environment variables.",
 				})
 				return
 			}

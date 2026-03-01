@@ -14,7 +14,7 @@ func SeedPrompts() {
 		{
 			ID:          uuid.New().String(),
 			PersonaID:   PersonaIDs["Shakespeare"],
-			PromptStyle: "Rewrite the following text in Elizabethan English...",
+			PromptStyle: "Rewrite the following text in Elizabethan English much like Shakespeare's speech and be just as dramatic and flowery...",
 			Enabled:     true,
 		},
 		{
@@ -26,7 +26,7 @@ func SeedPrompts() {
 		{
 			ID:          uuid.New().String(),
 			PersonaID:   PersonaIDs["Painfully Normal Man"],
-			PromptStyle: "Rewrite the following text in a formal, professional tone...",
+			PromptStyle: "Rewrite the following text in a formal, professional tone, still using dad jokes and being the most average boring man alive...",
 			Enabled:     true,
 		},
 	}
