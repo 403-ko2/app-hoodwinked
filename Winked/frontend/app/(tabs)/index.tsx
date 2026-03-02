@@ -5,8 +5,10 @@ import { personas } from "../../data/personas";
 import { useRouter } from "expo-router";
 import { type Persona, usePersona } from "../../context/PersonaContext";
 import { getPersonas } from "../../services/api";
+import { useTheme } from "@react-navigation/native";
 
 export default function Index() {
+  const { colors } = useTheme();
   const router = useRouter();
   const { setSelectedPersona } = usePersona();
   const [personaList, setPersonaList] = useState<Persona[]>(personas as Persona[]);
@@ -43,13 +45,14 @@ export default function Index() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Text
         style={{
           fontSize: 24,
           fontWeight: "bold",
           textAlign: "center",
           marginVertical: 20,
+          color: colors.text,
         }}
       >
         Choose a Persona
