@@ -8,12 +8,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useTheme } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { deleteHistoryEntry, getHistory, resolvePersonaImage, type HistoryItem } from "../../services/api";
 
 export default function HistoryScreen() {
+  const { colors } = useTheme();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -82,12 +83,12 @@ export default function HistoryScreen() {
     return (
       <View
         style={{
-          backgroundColor: "#fff",
+          backgroundColor: colors.card,
           borderRadius: 14,
           padding: 12,
           marginBottom: 12,
           borderWidth: 1,
-          borderColor: "#eee",
+          borderColor: colors.border,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
@@ -96,8 +97,8 @@ export default function HistoryScreen() {
             style={{ width: 42, height: 42, borderRadius: 21, marginRight: 10 }}
           />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 15, fontWeight: "700" }}>{item.personaName}</Text>
-            <Text style={{ fontSize: 12, color: "#666" }}>{createdAtLabel}</Text>
+            <Text style={{ fontSize: 15, fontWeight: "700", color: colors.text }}>{item.personaName}</Text>
+            <Text style={{ fontSize: 12, color: colors.text }}>{createdAtLabel}</Text>
           </View>
           <TouchableOpacity
             onPress={() => handleDelete(item)}
@@ -115,9 +116,9 @@ export default function HistoryScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>Input</Text>
+        <Text style={{ fontSize: 12, color: colors.text, marginBottom: 4 }}>Input</Text>
         <TouchableOpacity onPress={() => toggleExpanded(inputKey)} activeOpacity={0.7}>
-          <Text numberOfLines={isInputExpanded ? undefined : 2} style={{ marginBottom: 8 }}>
+          <Text numberOfLines={isInputExpanded ? undefined : 2} style={{ marginBottom: 8, color: colors.text }}>
             {item.inputText || "(empty)"}
           </Text>
           <Text style={{ color: "#6a1b9a", marginBottom: 10 }}>
@@ -131,17 +132,19 @@ export default function HistoryScreen() {
             borderColor: "#efe7f8",
             borderRadius: 10,
             padding: 10,
-            backgroundColor: "#faf7fd",
+            backgroundColor: colors.background,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
-            <Text style={{ fontSize: 12, color: "#666", flex: 1 }}>Output</Text>
+            <Text style={{ fontSize: 12, color: colors.text, flex: 1 }}>Output</Text>
             <TouchableOpacity onPress={() => copyOutput(item)} hitSlop={8} style={{ padding: 4 }}>
               <Ionicons name="copy-outline" size={18} color="#6a1b9a" />
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => toggleExpanded(outputKey)} activeOpacity={0.7}>
-            <Text numberOfLines={isOutputExpanded ? undefined : 3}>{item.outputText || "(empty)"}</Text>
+            <Text numberOfLines={isOutputExpanded ? undefined : 3} style={{ color: colors.text }}>
+              {item.outputText || "(empty)"}
+            </Text>
             <Text style={{ color: "#6a1b9a", marginTop: 6 }}>
               {isOutputExpanded ? "Show less" : "Show full output"}
             </Text>
@@ -156,15 +159,17 @@ export default function HistoryScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
+      <View
+        style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.background }}
+      >
         <ActivityIndicator size="large" color="#6a1b9a" />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff", padding: 16 }}>
-      <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 12 }}>History</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
+      <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 12, color: colors.text }}>History</Text>
       {error ? (
         <Text style={{ color: "#b00020", marginBottom: 10 }}>{error}</Text>
       ) : null}

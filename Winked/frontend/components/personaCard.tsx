@@ -1,7 +1,10 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { Text, Image, TouchableOpacity } from "react-native";
+import { useTheme } from "@react-navigation/native";
 
 export default function PersonaCard({ persona, onPress }) {
+  const { dark, colors } = useTheme();
+
   return (
     <TouchableOpacity
       onPress={() => onPress(persona)}
@@ -9,9 +12,11 @@ export default function PersonaCard({ persona, onPress }) {
         width: 140,
         alignItems: "center",
         margin: 10,
-        backgroundColor: "#f8f8f8",
+        backgroundColor: dark ? "#2a2a2a" : "#f8f8f8",
         borderRadius: 16,
         padding: 12,
+        borderWidth: 1,
+        borderColor: dark ? "#3a3a3a" : "#f0f0f0",
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 6,
@@ -27,7 +32,7 @@ export default function PersonaCard({ persona, onPress }) {
           marginBottom: 10,
         }}
       />
-      <Text style={{ fontSize: 16, fontWeight: "600", textAlign: "center" }}>
+      <Text style={{ fontSize: 16, fontWeight: "600", textAlign: "center", color: colors.text }}>
         {persona.name}
       </Text>
     </TouchableOpacity>

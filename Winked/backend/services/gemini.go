@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -53,6 +54,13 @@ func RewriteText(promptStyle string, inputText string) (string, error) {
 		model = "gemini-2.5-flash"
 	}
 
+	maxOutputTokens := 1500
+	if raw := os.Getenv("GEMINI_MAX_OUTPUT_TOKENS"); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			maxOutputTokens = parsed
+		}
+	}
+
 	reqBody := geminiGenerateRequest{
 		SystemInstruction: &geminiContent{
 			Parts: []geminiPart{
@@ -73,7 +81,7 @@ func RewriteText(promptStyle string, inputText string) (string, error) {
 		},
 		GenerationConfig: &generationConfig{
 			Temperature:     0.8,
-			MaxOutputTokens: 500,
+			MaxOutputTokens: maxOutputTokens,
 		},
 	}
 
