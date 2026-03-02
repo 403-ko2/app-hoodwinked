@@ -45,3 +45,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# local-only personal notes
+HOODWINKED_STUDY_GUIDE.md
