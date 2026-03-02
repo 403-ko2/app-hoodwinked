@@ -9,15 +9,16 @@ import (
 // Migrate runs auto-migrations for all models
 func Migrate() {
 	err := database.DB.AutoMigrate(
-	//	&models.User{},
+		//	&models.User{},
 		&models.Persona{},
 		&models.Prompt{},
 		&models.Transform{},
+		&models.History{},
 	)
-	
+
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
-	
+
 	log.Println("Database migration completed.")
 }

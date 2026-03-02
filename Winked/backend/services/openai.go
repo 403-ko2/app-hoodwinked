@@ -14,8 +14,8 @@ import (
 var ErrMissingAPIKey = errors.New("GEMINI_API_KEY is not set")
 
 type geminiGenerateRequest struct {
-	SystemInstruction *geminiContent `json:"system_instruction,omitempty"`
-	Contents          []geminiContent `json:"contents"`
+	SystemInstruction *geminiContent    `json:"system_instruction,omitempty"`
+	Contents          []geminiContent   `json:"contents"`
 	GenerationConfig  *generationConfig `json:"generationConfig,omitempty"`
 }
 

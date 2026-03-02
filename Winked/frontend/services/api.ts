@@ -18,10 +18,26 @@ type RewriteRequest = {
 
 type RewriteResponse = {
   transformId: string;
+  historyId: string;
   personaId: string;
   personaName: string;
   originalText: string;
   transformedText: string;
+};
+
+export type HistoryItem = {
+  id: string;
+  transformId: string;
+  personaId: string;
+  personaName: string;
+  personaImageUrl?: string;
+  inputText: string;
+  outputText: string;
+  createdAt: string;
+};
+
+type HistoryResponse = {
+  history: HistoryItem[];
 };
 
 const imageByPersonaName: Record<string, { uri: string }> = {
@@ -52,6 +68,13 @@ async function parseError(response: Response): Promise<string> {
   return `Request failed with status ${response.status}`;
 }
 
+export function resolvePersonaImage(personaName: string, personaImageUrl?: string): { uri: string } {
+  if (personaImageUrl && personaImageUrl.startsWith("http")) {
+    return { uri: personaImageUrl };
+  }
+  return imageByPersonaName[personaName] ?? fallbackPersonaImage;
+}
+
 export async function getPersonas(): Promise<Persona[]> {
   let response: Response;
   try {
@@ -68,7 +91,7 @@ export async function getPersonas(): Promise<Persona[]> {
     id: persona.id,
     name: persona.name,
     description: persona.description,
-    image: imageByPersonaName[persona.name] ?? fallbackPersonaImage,
+    image: resolvePersonaImage(persona.name, persona.imageUrl),
   }));
 }
 
@@ -91,4 +114,38 @@ export async function rewriteText(payload: RewriteRequest): Promise<RewriteRespo
   }
 
   return (await response.json()) as RewriteResponse;
+}
+
+export async function getHistory(limit = 50, personaID?: string): Promise<HistoryItem[]> {
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (personaID) query.set("personaID", personaID);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/history?${query.toString()}`);
+  } catch {
+    throw new Error(`Cannot reach API at ${API_BASE_URL}. Is backend running?`);
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  const data = (await response.json()) as HistoryResponse;
+  return data.history;
+}
+
+export async function deleteHistoryEntry(historyId: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/history/${historyId}`, {
+      method: "DELETE",
+    });
+  } catch {
+    throw new Error(`Cannot reach API at ${API_BASE_URL}. Is backend running?`);
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
 }
