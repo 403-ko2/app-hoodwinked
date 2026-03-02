@@ -1,22 +1,76 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { usePersona } from "../../context/PersonaContext";
-import { rewriteText } from "../../services/api";
+import { getHistory, rewriteText } from "../../services/api";
+import * as Clipboard from "expo-clipboard";
+
+type ConversationEntry = {
+  id: string;
+  input: string;
+  output: string;
+  createdAt: string;
+};
 
 export default function RewriteScreen() {
   const router = useRouter();
   const { selectedPersona } = usePersona();
+  const scrollRef = useRef<ScrollView | null>(null);
   const [text, setText] = useState("");
-  const [rewrittenText, setRewrittenText] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedEntryId, setCopiedEntryId] = useState<string | null>(null);
+  const [conversationsByPersona, setConversationsByPersona] = useState<Record<string, ConversationEntry[]>>({});
+
+  const currentConversation = useMemo(() => {
+    if (!selectedPersona) return [];
+    return conversationsByPersona[selectedPersona.id] ?? [];
+  }, [conversationsByPersona, selectedPersona]);
 
   const handlePersonaPress = () => {
     // Takes user back to personas tab to pick one
     router.replace("/");
   };
+
+  useEffect(() => {
+    if (!selectedPersona) return;
+    let isMounted = true;
+
+    const loadPersonaHistory = async () => {
+      try {
+        const history = await getHistory(100, selectedPersona.id);
+        if (!isMounted) return;
+
+        // API returns newest first; chat UI reads naturally oldest to newest.
+        const mapped = history
+          .slice()
+          .reverse()
+          .map((item) => ({
+            id: item.id,
+            input: item.inputText ?? "",
+            output: item.outputText ?? "",
+            createdAt: item.createdAt,
+          }));
+
+        setConversationsByPersona((prev) => {
+          const existing = prev[selectedPersona.id] ?? [];
+          const merged = [...mapped, ...existing];
+          const deduped = Array.from(new Map(merged.map((entry) => [entry.id, entry])).values()).sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          );
+          return { ...prev, [selectedPersona.id]: deduped };
+        });
+      } catch {
+        // Keep local session conversation if history fetch fails.
+      }
+    };
+
+    loadPersonaHistory();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedPersona]);
 
   const handleSubmit = async () => {
     const normalized = text.trim();
@@ -34,13 +88,32 @@ export default function RewriteScreen() {
         personaID: selectedPersona.id,
       });
 
-      setRewrittenText(response.transformedText);
+      const entryID = response.historyId || response.transformId || `${Date.now()}`;
+      const newEntry: ConversationEntry = {
+        id: entryID,
+        input: normalized,
+        output: response.transformedText,
+        createdAt: new Date().toISOString(),
+      };
+      setConversationsByPersona((prev) => ({
+        ...prev,
+        [selectedPersona.id]: [...(prev[selectedPersona.id] ?? []), newEntry],
+      }));
       setText("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rewrite text");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCopyOutput = async (entry: ConversationEntry) => {
+    if (!entry.output) return;
+    await Clipboard.setStringAsync(entry.output);
+    setCopiedEntryId(entry.id);
+    setTimeout(() => {
+      setCopiedEntryId((prev) => (prev === entry.id ? null : prev));
+    }, 1400);
   };
 
   return (
@@ -81,8 +154,74 @@ export default function RewriteScreen() {
         </Text>
       </View>
 
+      {/* Conversation area */}
+      <View
+        style={{
+          flex: 1,
+          marginTop: 20,
+          borderWidth: 1,
+          borderColor: "#ececec",
+          borderRadius: 14,
+          backgroundColor: "#fafafa",
+          overflow: "hidden",
+        }}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{ padding: 12, gap: 10 }}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        >
+          {currentConversation.length === 0 ? (
+            <Text style={{ color: "#666", textAlign: "center", marginTop: 20 }}>
+              Rewritten messages for this persona will appear here.
+            </Text>
+          ) : (
+            currentConversation.map((entry) => (
+              <View key={entry.id}>
+                <View
+                  style={{
+                    alignSelf: "flex-end",
+                    maxWidth: "90%",
+                    backgroundColor: "#e8e0f4",
+                    borderRadius: 12,
+                    padding: 10,
+                    marginBottom: 6,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: "#5f5f5f", marginBottom: 4 }}>You</Text>
+                  <Text>{entry.input}</Text>
+                </View>
+
+                <View
+                  style={{
+                    alignSelf: "flex-start",
+                    maxWidth: "95%",
+                    backgroundColor: "#f3ecfb",
+                    borderRadius: 12,
+                    padding: 10,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+                    <Text style={{ fontSize: 12, color: "#5f5f5f", flex: 1 }}>
+                      {selectedPersona?.name || "Persona"}
+                    </Text>
+                    <TouchableOpacity onPress={() => handleCopyOutput(entry)} hitSlop={8}>
+                      <Ionicons name="copy-outline" size={18} color="#6a1b9a" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text>{entry.output}</Text>
+                  {copiedEntryId === entry.id ? (
+                    <Text style={{ color: "#2e7d32", fontSize: 12, marginTop: 6 }}>Copied</Text>
+                  ) : null}
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </View>
+
       {/* Input box */}
-      <View style={{ marginTop: 60 }}>
+      <View style={{ marginTop: 14 }}>
         <TextInput
           value={text}
           onChangeText={setText}
@@ -131,19 +270,6 @@ export default function RewriteScreen() {
         </Text>
       ) : null}
 
-      {rewrittenText ? (
-        <View
-          style={{
-            marginTop: 20,
-            padding: 12,
-            borderRadius: 12,
-            backgroundColor: "#f6f2fb",
-          }}
-        >
-          <Text style={{ fontWeight: "600", marginBottom: 6 }}>Rewritten text</Text>
-          <Text>{rewrittenText}</Text>
-        </View>
-      ) : null}
     </View>
   );
 }

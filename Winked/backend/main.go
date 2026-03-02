@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"fmt"
+	"time"
 
 	"backend/database"
 	"backend/database/migrations"
@@ -26,10 +26,22 @@ type RewriteRequest struct {
 
 type RewriteResponse struct {
 	TransformID     string `json:"transformId"`
+	HistoryID       string `json:"historyId"`
 	PersonaID       string `json:"personaId"`
 	PersonaName     string `json:"personaName"`
 	OriginalText    string `json:"originalText"`
 	TransformedText string `json:"transformedText"`
+}
+
+type HistoryItemResponse struct {
+	ID              string `json:"id"`
+	TransformID     string `json:"transformId"`
+	PersonaID       string `json:"personaId"`
+	PersonaName     string `json:"personaName"`
+	PersonaImageURL string `json:"personaImageUrl"`
+	InputText       string `json:"inputText"`
+	OutputText      string `json:"outputText"`
+	CreatedAt       string `json:"createdAt"`
 }
 
 func main() {
@@ -39,10 +51,11 @@ func main() {
 	seeds.Run()
 
 	r := gin.Default()
+	_ = r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if c.Request.Method == "OPTIONS" {
@@ -73,7 +86,6 @@ func main() {
 		var req RewriteRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "text and personaID are required"})
-			fmt.Println()
 			return
 		}
 
@@ -124,8 +136,18 @@ func main() {
 			return
 		}
 
+		history := models.History{
+			PersonaID:   req.PersonaID,
+			TransformID: transform.ID,
+		}
+		if err := database.DB.Create(&history).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save history"})
+			return
+		}
+
 		c.JSON(http.StatusOK, RewriteResponse{
 			TransformID:     transform.ID,
+			HistoryID:       strconv.FormatUint(uint64(history.ID), 10),
 			PersonaID:       req.PersonaID,
 			PersonaName:     persona.Name,
 			OriginalText:    req.Text,
@@ -148,18 +170,66 @@ func main() {
 		}
 
 		personaID := c.Query("personaID")
-		query := database.DB.Preload("Persona").Order("created_at DESC").Limit(limit)
+		query := database.DB.
+			Preload("Persona").
+			Preload("Transform").
+			Order("created_at DESC").
+			Limit(limit)
 		if personaID != "" {
 			query = query.Where("persona_id = ?", personaID)
 		}
 
-		var transforms []models.Transform
-		if err := query.Find(&transforms).Error; err != nil {
+		var history []models.History
+		if err := query.Find(&history).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load history"})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"history": transforms})
+		items := make([]HistoryItemResponse, 0, len(history))
+		for _, entry := range history {
+			inputText := ""
+			outputText := ""
+			if entry.Transform.InputText != nil {
+				inputText = *entry.Transform.InputText
+			}
+			if entry.Transform.OutputText != nil {
+				outputText = *entry.Transform.OutputText
+			}
+
+			items = append(items, HistoryItemResponse{
+				ID:              strconv.FormatUint(uint64(entry.ID), 10),
+				TransformID:     entry.TransformID,
+				PersonaID:       entry.PersonaID,
+				PersonaName:     entry.Persona.Name,
+				PersonaImageURL: entry.Persona.ImageURL,
+				InputText:       inputText,
+				OutputText:      outputText,
+				CreatedAt:       entry.CreatedAt.Format(time.RFC3339),
+			})
+		}
+
+		c.JSON(http.StatusOK, gin.H{"history": items})
+	})
+
+	r.DELETE("/history/:id", func(c *gin.Context) {
+		historyID := c.Param("id")
+
+		var history models.History
+		if err := database.DB.Where("CAST(id AS TEXT) = ?", historyID).First(&history).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to find history entry"})
+			return
+		}
+
+		if err := database.DB.Delete(&history).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete history entry"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "history entry deleted"})
 	})
 
 	// Start server on 8080 (this is default)
